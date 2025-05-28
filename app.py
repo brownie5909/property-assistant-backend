@@ -1,27 +1,27 @@
-from flask import Flask, request, jsonify
-import os
-import requests
+from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
+from assistant_tools import get_property_insights_and_pdf
 
 app = Flask(__name__)
+CORS(app)
 
-@app.route("/", methods=["GET"])
+@app.route('/')
 def home():
     return "Property Assistant API is running!"
 
-@app.route("/generate-report", methods=["POST"])
+@app.route('/generate-report', methods=['POST'])
 def generate_report():
-    data = request.get_json()
-    if not data or "address" not in data:
-        return jsonify({"error": "Missing address"}), 400
+    try:
+        data = request.json
+        address = data.get("address")
+        if not address:
+            return jsonify({"error": "Missing 'address' in request."}), 400
 
-    address = data["address"]
-    # Mock response
-    return jsonify({
-        "address": address,
-        "summary": "This would be the PDF summary for the address.",
-        "link": "https://drive.google.com/file/d/your-file-id/view?usp=sharing"
-    })
+        result = get_property_insights_and_pdf(address)
+        return jsonify(result)
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port=10000)
